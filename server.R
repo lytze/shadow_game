@@ -2,17 +2,17 @@ require(shiny)
 require(shinysky)
 require(knitr)
 
-shinyServer(function(input, output) {
+shinyServer(function(input, output, session) {
     # Extensions
     source('multiAction.R')
     # Static Values
-    idols <- c("GUMI", "一十木音也", "三浦梓", "东条希", "初音", "南小鸟", "四条贵音",
-               "园田海未", "天海春香", "如月千早", "小泉花阳", "我那霸响", "星井美希",
-               "星空凛", "水瀬伊织", "洛天依", "矢泽妮可", "秋月律子", "绚濑绘里", "菊地真",
-               "萩原雪步", "西木野真姬", "巡音", "镜音双子", "音无小鸟", "高坂穗乃果", "高槻弥生")
-    mapping <- c(1, 1, 2, 3, 4, 4, 4, 5, 5, 6, 6, 6, 7, 8, 8, 8, 9, 10, 11,
-                 11, 11, 12, 13, 14, 14, 14, 15, 16, 17, 17, 17, 18, 19, 19,
-                 19, 20, 21, 22, 22, 22, 23, 23, 24, 24, 25, 26, 26, 26, 27)
+    idols <- c("GUMI", "一十木音也", "三浦梓", "东条希", "初音Miku", "南小鸟", "四条贵音",
+               "园田海未", "天海春香", "如月千早", "小泉花阳", "我那霸响", "星井美希", "星空凛",
+               "水瀬伊织", "洛天依", "矢泽妮可", "秋月律子", "绚濑绘里", "菊地真", "萩原雪步",
+               "西木野真姬", "巡音Luka", "镜音Ren", "镜音Rin", "音无小鸟", "高坂穗乃果", "高槻弥生")
+    mapping <- c(1, 1, 2, 3, 4, 4, 4, 5, 5, 6, 6, 6, 7, 8, 8, 8, 9, 10, 11, 11, 11, 12, 13, 14, 14,
+                 14, 15, 16, 17, 17, 17, 18, 19, 19, 19, 20, 21, 22, 22, 22, 23, 23, 24, 25, 26, 27,
+                 27, 27, 28)
     filenames <- c("1.jpg", "2.png", "3.jpg", "4.png", "5.png", "6.jpg", "7.jpg", "8.jpg", "9.jpg",
                    "10.png", "11.jpg", "12.jpg", "13.png", "14.png", "15.jpg", "16.jpg", "17.jpg",
                    "18.png", "19.png", "20.jpg", "21.jpg", "22.png", "23.png", "24.png", "25.jpg",
@@ -25,6 +25,7 @@ shinyServer(function(input, output) {
     last <- F
     # Reactive Values
     RV <- reactiveValues(state = 0)
+    
     # Output Functions
     generateStartPage <- function() {
         list(
@@ -68,13 +69,12 @@ shinyServer(function(input, output) {
             )
         )
     }
-    generateGamePageOf <- function() {
-        round_num <- isolate(RV$state)
+    generateGamePageOf <- function(round_num) {
         idol_id <- play_list[round_num]
         idol_name <- idols[idol_id]
         puzzle <- sample(filenames[mapping != idol_id], 20, replace = F)
         bingo <- sample(1:20, 1)
-        puzzle[bingo] <- filenames[sample(which(mapping == idol_id), 1)]
+        puzzle[bingo] <- sample(filenames[which(mapping == idol_id)], 1)
         list(
             div(class = 'round-play-page',
                 h3(paste0('请找出『', idol_name, '』')),
@@ -82,11 +82,14 @@ shinyServer(function(input, output) {
                 lapply(1:length(puzzle), function(i) {
                     sel <- puzzle[i]
                     is_correct <- (i == bingo)
-                    tags$img(src = #image_uri(paste0('./img/', sel))
-                             paste0('./img/', sel), height = 250,
+                    tags$img(#src = #img_URI[sel],
+                             #paste0('./img/', sel),
+                             height = 250,
                              class = 'idol-img multi-action-item',
+                             id = gsub('\\.', '_', sel),
                              which = is_correct, watch = 'playerResponse')
                 }),
+                tags$script(type = 'text/javascript', 'loadImg()'),
                 if (round_num == 1) {
                     NULL
                 } else {
@@ -117,7 +120,8 @@ shinyServer(function(input, output) {
         } else if (RV$state == -2) {
             output$gamePage <- renderUI(generateSorryPage())
         } else {
-            output$gamePage <- renderUI(generateGamePageOf())
+            round_num <- isolate(RV$state)
+            output$gamePage <- renderUI(generateGamePageOf(round_num))
         }
     })
     observeEvent(input$startGame, {

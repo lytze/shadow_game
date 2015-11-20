@@ -73,3 +73,9 @@ body {
 	text-align: center;
 	cursor: pointer;
 }
+.session-store {
+    display: none;
+}
+.hidden-stored-img {
+    display: none;
+}
